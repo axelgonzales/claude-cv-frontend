@@ -301,7 +301,6 @@ function buildModern({ profile, experiences, educations, skills }: Props): Docum
 function buildCompact({ profile, experiences, educations, skills }: Props): Document {
   const TX = '000000', MU = '333333';
   const FN = 'Calibri', BS = 19, TS = 20;
-  const o = { font: FN, tx: TX, mu: MU, ac: TX, bodySize: BS, titleSize: TS };
 
   const heading = (text: string) => new Paragraph({
     spacing: { before: 200, after: 60 },
