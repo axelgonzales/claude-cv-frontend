@@ -12,15 +12,29 @@ export default function SkillsForm({ skillGroups, onChange }: { skillGroups: Ski
   const save = async () => {
     if (!editing) return;
     setSaving(true);
-    if (editing.id) await skillsApi.update(editing.id, editing);
-    else await skillsApi.create(editing);
-    setSaving(false);
-    setEditing(null);
-    onChange();
+    try {
+      if (editing.id) await skillsApi.update(editing.id, editing);
+      else await skillsApi.create(editing);
+      setEditing(null);
+      onChange();
+    } catch (err) {
+      console.error('Error guardando habilidad:', err);
+      alert('Error al guardar. Revisa la consola.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const remove = async (id: number) => {
-    if (confirm('¿Eliminar?')) { await skillsApi.delete(id); onChange(); }
+    if (confirm('¿Eliminar?')) {
+      try {
+        await skillsApi.delete(id);
+        onChange();
+      } catch (err) {
+        console.error('Error eliminando:', err);
+        alert('Error al eliminar.');
+      }
+    }
   };
 
   const h = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -48,7 +62,7 @@ export default function SkillsForm({ skillGroups, onChange }: { skillGroups: Ski
               className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 resize-none" />
           </div>
           <div className="flex flex-wrap gap-2 mt-1">
-            {editing.items.split(',').filter(Boolean).map(i => (
+            {(editing.items ?? '').split(',').filter(Boolean).map(i => (
               <span key={i} className="px-2 py-0.5 bg-blue-500/10 text-blue-300 text-xs rounded-md border border-blue-500/20">{i.trim()}</span>
             ))}
           </div>

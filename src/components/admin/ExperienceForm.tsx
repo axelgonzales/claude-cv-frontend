@@ -12,17 +12,28 @@ export default function ExperienceForm({ experiences, onChange }: { experiences:
   const save = async () => {
     if (!editing) return;
     setSaving(true);
-    if (editing.id) await experienceApi.update(editing.id, editing);
-    else await experienceApi.create(editing);
-    setSaving(false);
-    setEditing(null);
-    onChange();
+    try {
+      if (editing.id) await experienceApi.update(editing.id, editing);
+      else await experienceApi.create(editing);
+      setEditing(null);
+      onChange();
+    } catch (err) {
+      console.error('Error guardando experiencia:', err);
+      alert('Error al guardar. Revisa la consola.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const remove = async (id: number) => {
     if (confirm('¿Eliminar esta experiencia?')) {
-      await experienceApi.delete(id);
-      onChange();
+      try {
+        await experienceApi.delete(id);
+        onChange();
+      } catch (err) {
+        console.error('Error eliminando:', err);
+        alert('Error al eliminar.');
+      }
     }
   };
 

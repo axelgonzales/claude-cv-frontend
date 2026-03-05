@@ -8,6 +8,43 @@ import SkillsSection from '../components/cv/SkillsSection';
 import { Link } from 'react-router-dom';
 import { Settings } from 'lucide-react';
 
+function SkeletonHero() {
+  return (
+    <section style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', padding: '0 24px', background: 'var(--cv-bg)' }}>
+      <div style={{ width: '100%', maxWidth: '900px', margin: '0 auto' }}>
+        <div className="cv-shimmer" style={{ width: '120px', height: '10px', marginBottom: '32px', borderRadius: '4px' }} />
+        <div className="cv-shimmer" style={{ width: '72px', height: '72px', borderRadius: '16px', marginBottom: '24px' }} />
+        <div className="cv-shimmer" style={{ width: '70%', height: '64px', borderRadius: '8px', marginBottom: '16px' }} />
+        <div className="cv-shimmer" style={{ width: '40%', height: '24px', borderRadius: '6px', marginBottom: '24px' }} />
+        <div className="cv-shimmer" style={{ width: '90%', height: '14px', borderRadius: '4px', marginBottom: '8px' }} />
+        <div className="cv-shimmer" style={{ width: '75%', height: '14px', borderRadius: '4px', marginBottom: '8px' }} />
+        <div className="cv-shimmer" style={{ width: '55%', height: '14px', borderRadius: '4px', marginBottom: '32px' }} />
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {[160, 90, 110, 80].map(w => (
+            <div key={w} className="cv-shimmer" style={{ width: w, height: '32px', borderRadius: '999px' }} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SkeletonSection() {
+  return (
+    <div style={{ padding: '80px 0', borderTop: '1px solid var(--cv-border)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '48px' }}>
+        <div className="cv-shimmer" style={{ width: '24px', height: '10px', borderRadius: '4px' }} />
+        <div className="cv-shimmer" style={{ width: '140px', height: '24px', borderRadius: '6px' }} />
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {[1, 2, 3].map(i => (
+          <div key={i} className="cv-shimmer" style={{ height: '90px', borderRadius: '12px' }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function CvPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [experiences, setExperiences] = useState<Experience[]>([]);
@@ -29,31 +66,105 @@ export default function CvPage() {
     }).finally(() => setLoading(false));
   }, []);
 
-  if (loading) return (
-    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
+  if (loading) {
+    return (
+      <div style={{ background: 'var(--cv-bg)', minHeight: '100vh' }}>
+        <SkeletonHero />
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 24px' }}>
+          <SkeletonSection />
+          <SkeletonSection />
+          <SkeletonSection />
+        </div>
+      </div>
+    );
+  }
 
-  if (!profile) return (
-    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-slate-400">
-      No se encontró el perfil
-    </div>
-  );
+  if (!profile) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          background: 'var(--cv-bg)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '12px',
+        }}
+      >
+        <p style={{ fontFamily: 'var(--cv-font-heading)', fontSize: '1.1rem', color: 'var(--cv-text-secondary)' }}>
+          No se encontró el perfil
+        </p>
+        <p style={{ fontFamily: 'var(--cv-font-mono)', fontSize: '0.72rem', color: 'var(--cv-accent)' }}>
+          Verifica que el backend esté en ejecución · localhost:8081
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
-      <HeroSection profile={profile} />
-      <div className="max-w-5xl mx-auto px-6">
+    <div style={{ background: 'var(--cv-bg)', minHeight: '100vh' }}>
+      <HeroSection profile={profile} experiences={experiences} educations={educations} skills={skills} />
+
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 24px' }}>
         <ExperienceSection experiences={experiences} />
         <SkillsSection skillGroups={skills} />
         <EducationSection educations={educations} />
-        <footer className="py-10 text-center text-slate-600 text-sm border-t border-slate-800 mt-4">
-          © {new Date().getFullYear()} {profile.name}
+
+        <footer
+          style={{
+            padding: '40px 0',
+            borderTop: '1px solid var(--cv-border)',
+            marginTop: '24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <p style={{ fontFamily: 'var(--cv-font-mono)', fontSize: '0.7rem', color: 'var(--cv-text-muted)' }}>
+            <span style={{ color: 'var(--cv-accent)' }}>{profile.name}</span>
+            {' '}· {new Date().getFullYear()}
+          </p>
+          <p style={{ fontFamily: 'var(--cv-font-mono)', fontSize: '0.65rem', color: 'var(--cv-text-muted)', letterSpacing: '0.1em' }}>
+            LIMA, PERÚ
+          </p>
         </footer>
       </div>
-      <Link to="/admin" className="fixed bottom-6 right-6 p-3 bg-slate-800 rounded-full border border-slate-700 text-slate-400 hover:text-blue-400 hover:border-blue-500/50 transition-colors shadow-xl">
-        <Settings size={18} />
+
+      {/* Botón admin */}
+      <Link
+        to="/admin"
+        title="Panel de administración"
+        style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          width: '40px',
+          height: '40px',
+          borderRadius: '10px',
+          background: 'var(--cv-surface-2)',
+          border: '1px solid var(--cv-border)',
+          color: 'var(--cv-text-muted)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textDecoration: 'none',
+          transition: 'all 0.2s ease',
+        }}
+        onMouseEnter={e => {
+          const el = e.currentTarget as HTMLAnchorElement;
+          el.style.borderColor = 'var(--cv-accent-border)';
+          el.style.color = 'var(--cv-accent)';
+          el.style.boxShadow = '0 0 16px var(--cv-accent-glow)';
+        }}
+        onMouseLeave={e => {
+          const el = e.currentTarget as HTMLAnchorElement;
+          el.style.borderColor = 'var(--cv-border)';
+          el.style.color = 'var(--cv-text-muted)';
+          el.style.boxShadow = 'none';
+        }}
+      >
+        <Settings size={16} />
       </Link>
     </div>
   );

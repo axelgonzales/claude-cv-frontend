@@ -12,15 +12,29 @@ export default function EducationForm({ educations, onChange }: { educations: Ed
   const save = async () => {
     if (!editing) return;
     setSaving(true);
-    if (editing.id) await educationApi.update(editing.id, editing);
-    else await educationApi.create(editing);
-    setSaving(false);
-    setEditing(null);
-    onChange();
+    try {
+      if (editing.id) await educationApi.update(editing.id, editing);
+      else await educationApi.create(editing);
+      setEditing(null);
+      onChange();
+    } catch (err) {
+      console.error('Error guardando educación:', err);
+      alert('Error al guardar. Revisa la consola.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const remove = async (id: number) => {
-    if (confirm('¿Eliminar?')) { await educationApi.delete(id); onChange(); }
+    if (confirm('¿Eliminar?')) {
+      try {
+        await educationApi.delete(id);
+        onChange();
+      } catch (err) {
+        console.error('Error eliminando:', err);
+        alert('Error al eliminar.');
+      }
+    }
   };
 
   const h = (e: React.ChangeEvent<HTMLInputElement>) =>

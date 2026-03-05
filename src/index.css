@@ -1,18 +1,122 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fira+Code:wght@300;400;500&display=swap');
 @import "tailwindcss";
+@import "tw-animate-css";
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Base */
+  --cv-bg:               #000000;
+  --cv-bg-soft:          #050505;
+  --cv-surface:          #0a0a0a;
+  --cv-surface-2:        #111111;
+  --cv-surface-3:        #181818;
+  --cv-border:           rgba(255,255,255,0.07);
+  --cv-border-hover:     rgba(255,255,255,0.14);
+
+  /* Text */
+  --cv-text-primary:     #FAFAFA;
+  --cv-text-secondary:   #A1A1AA;
+  --cv-text-muted:       #52525B;
+
+  /* Accent — cyan eléctrico */
+  --cv-accent:           #06b6d4;
+  --cv-accent-dim:       rgba(6,182,212,0.15);
+  --cv-accent-glow:      rgba(6,182,212,0.25);
+  --cv-accent-border:    rgba(6,182,212,0.3);
+
+  /* Fonts */
+  --cv-font-heading: 'Space Grotesk', system-ui, sans-serif;
+  --cv-font-body:    'DM Sans', system-ui, sans-serif;
+  --cv-font-mono:    'Fira Code', 'Fira Mono', monospace;
 }
 
-body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: #0a0a0a;
-  color: #e2e8f0;
-  -webkit-font-smoothing: antialiased;
+/* ─── Base (en @layer para que Tailwind utilities lo sobreescriban) ─── */
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--cv-font-body);
+    background-color: var(--cv-bg);
+    color: var(--cv-text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.6;
+  }
 }
 
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #1a1a1a; }
-::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 3px; }
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--cv-bg); }
+::-webkit-scrollbar-thumb { background: rgba(6,182,212,0.3); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--cv-accent); }
+
+/* ─── Animaciones ─── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(6,182,212,0.5); }
+  50%       { box-shadow: 0 0 0 6px rgba(6,182,212,0); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Utility classes ─── */
+.cv-animate {
+  opacity: 0;
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+.cv-animate-delay-1 { animation-delay: 0.1s; }
+.cv-animate-delay-2 { animation-delay: 0.2s; }
+.cv-animate-delay-3 { animation-delay: 0.3s; }
+.cv-animate-delay-4 { animation-delay: 0.4s; }
+.cv-animate-delay-5 { animation-delay: 0.5s; }
+
+.cv-shimmer {
+  background: linear-gradient(90deg, var(--cv-surface) 25%, var(--cv-surface-3) 50%, var(--cv-surface) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+.cv-glow {
+  box-shadow: 0 0 24px var(--cv-accent-glow);
+}
+
+/* ─── Grid de fondo sutil ─── */
+.cv-grid-bg {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+/* ─── Noise overlay ─── */
+.cv-noise::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cv-animate { animation: none; opacity: 1; }
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
