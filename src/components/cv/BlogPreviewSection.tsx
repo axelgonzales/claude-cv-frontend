@@ -72,7 +72,7 @@ function PreviewCard({ post }: { post: typeof blogPosts[0] }) {
 
   return (
     <Link
-      to="/blog"
+      to={`/blog/${post.id}`}
       style={{
         textDecoration: 'none',
         display: 'block',

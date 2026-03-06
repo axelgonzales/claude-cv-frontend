@@ -82,3 +82,49 @@ export const skillsApi = {
   update: (id: number, data: SkillGroup) => api.put<SkillGroup>(`/skills/${id}`, data).then(r => r.data),
   delete: (id: number) => api.delete(`/skills/${id}`),
 };
+
+export interface BlogPost {
+  id?: number;
+  slug: string;
+  title: string;
+  excerpt: string;
+  category: string;
+  date: string;
+  readTime: string;
+  content: string;
+  tags: string;
+  imageUrl: string;
+  displayOrder: number;
+}
+
+export interface Project {
+  id?: number;
+  slug: string;
+  title: string;
+  description: string;
+  longDescription: string;
+  technologies: string;
+  category: string;
+  status: string;
+  liveUrl: string;
+  githubUrl: string;
+  highlights: string;
+  imageUrl: string;
+  displayOrder: number;
+}
+
+export const blogApi = {
+  getAll: () => api.get<BlogPost[]>('/blog').then(r => r.data),
+  getBySlug: (slug: string) => api.get<BlogPost>(`/blog/${slug}`).then(r => r.data),
+  create: (data: BlogPost) => api.post<BlogPost>('/blog', data).then(r => r.data),
+  update: (id: number, data: BlogPost) => api.put<BlogPost>(`/blog/${id}`, data).then(r => r.data),
+  delete: (id: number) => api.delete(`/blog/${id}`),
+};
+
+export const projectApi = {
+  getAll: () => api.get<Project[]>('/projects').then(r => r.data),
+  getBySlug: (slug: string) => api.get<Project>(`/projects/${slug}`).then(r => r.data),
+  create: (data: Project) => api.post<Project>('/projects', data).then(r => r.data),
+  update: (id: number, data: Project) => api.put<Project>(`/projects/${id}`, data).then(r => r.data),
+  delete: (id: number) => api.delete(`/projects/${id}`),
+};

@@ -1,12 +1,64 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ExternalLink, Github, ChevronRight, FolderKanban, CheckCircle } from 'lucide-react';
-import { projects, categoryColors, statusLabels, type Project } from '../data/projects';
+import { projectApi, type Project as ApiProject } from '../lib/api';
+import { projects as fallbackProjects, categoryColors, statusLabels } from '../data/projects';
 
 const categories = ['Todos', 'Full-Stack', 'Backend', 'Frontend', 'DevOps', 'AI'] as const;
+
+interface DisplayProject {
+  slug: string;
+  title: string;
+  description: string;
+  longDescription: string;
+  technologies: string[];
+  category: string;
+  status: string;
+  liveUrl?: string;
+  githubUrl?: string;
+  highlights: string[];
+  imageUrl: string;
+}
 
 export default function ProjectsPage() {
   const [activeCategory, setActiveCategory] = useState<string>('Todos');
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
+  const [projects, setProjects] = useState<DisplayProject[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    projectApi.getAll()
+      .then((data: ApiProject[]) => {
+        setProjects(data.map(p => ({
+          slug: p.slug,
+          title: p.title,
+          description: p.description,
+          longDescription: p.longDescription,
+          technologies: p.technologies ? p.technologies.split(',').map(t => t.trim()) : [],
+          category: p.category,
+          status: p.status,
+          liveUrl: p.liveUrl || undefined,
+          githubUrl: p.githubUrl || undefined,
+          highlights: p.highlights ? p.highlights.split('|||').map(h => h.trim()) : [],
+          imageUrl: p.imageUrl || `/images/projects/${p.slug}.png`,
+        })));
+      })
+      .catch(() => {
+        setProjects(fallbackProjects.map(p => ({
+          slug: p.id,
+          title: p.title,
+          description: p.description,
+          longDescription: p.longDescription,
+          technologies: p.technologies,
+          category: p.category,
+          status: p.status,
+          liveUrl: p.links.live,
+          githubUrl: p.links.github,
+          highlights: p.highlights,
+          imageUrl: `/images/projects/${p.id}.png`,
+        })));
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = activeCategory === 'Todos'
     ? projects
@@ -106,7 +158,7 @@ export default function ProjectsPage() {
         >
           {categories.map(cat => {
             const isActive = activeCategory === cat;
-            const color = cat === 'Todos' ? 'var(--cv-accent)' : categoryColors[cat as Project['category']];
+            const color = cat === 'Todos' ? 'var(--cv-accent)' : categoryColors[cat as keyof typeof categoryColors];
             return (
               <button
                 key={cat}
@@ -130,25 +182,35 @@ export default function ProjectsPage() {
           })}
         </div>
 
-        {/* Projects grid */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {filtered.map((project, idx) => (
-            <ProjectCard
-              key={project.id}
-              project={project}
-              index={idx}
-              isExpanded={expandedProject === project.id}
-              onToggle={() => setExpandedProject(expandedProject === project.id ? null : project.id)}
-            />
-          ))}
-        </div>
-
-        {filtered.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '60px 0' }}>
-            <p style={{ fontFamily: 'var(--cv-font-mono)', fontSize: '0.8rem', color: 'var(--cv-text-muted)' }}>
-              No hay proyectos en esta categoria aun.
-            </p>
+        {loading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {[1, 2, 3].map(i => (
+              <div key={i} className="cv-shimmer" style={{ height: '200px', borderRadius: '16px' }} />
+            ))}
           </div>
+        ) : (
+          <>
+            {/* Projects grid */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {filtered.map((project, idx) => (
+                <ProjectCard
+                  key={project.slug}
+                  project={project}
+                  index={idx}
+                  isExpanded={expandedProject === project.slug}
+                  onToggle={() => setExpandedProject(expandedProject === project.slug ? null : project.slug)}
+                />
+              ))}
+            </div>
+
+            {filtered.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                <p style={{ fontFamily: 'var(--cv-font-mono)', fontSize: '0.8rem', color: 'var(--cv-text-muted)' }}>
+                  No hay proyectos en esta categoria aun.
+                </p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -156,13 +218,13 @@ export default function ProjectsPage() {
 }
 
 function ProjectCard({ project, index, isExpanded, onToggle }: {
-  project: Project;
+  project: DisplayProject;
   index: number;
   isExpanded: boolean;
   onToggle: () => void;
 }) {
-  const color = categoryColors[project.category];
-  const status = statusLabels[project.status];
+  const color = categoryColors[project.category as keyof typeof categoryColors] || 'var(--cv-accent)';
+  const status = statusLabels[project.status as keyof typeof statusLabels] || { label: project.status, color: '#888' };
   const [hovered, setHovered] = useState(false);
 
   return (
@@ -181,23 +243,38 @@ function ProjectCard({ project, index, isExpanded, onToggle }: {
       onMouseLeave={() => setHovered(false)}
       onClick={onToggle}
     >
-      {/* Top accent */}
-      <div style={{ height: '2px', background: `linear-gradient(90deg, ${color}, transparent)` }} />
-
-      <div style={{ padding: '24px 28px' }}>
-        {/* Meta row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
+      {/* Cover image */}
+      <div style={{ position: 'relative', height: '180px', overflow: 'hidden' }}>
+        <img
+          src={project.imageUrl}
+          alt={project.title}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            transition: 'transform 0.3s ease',
+            transform: hovered ? 'scale(1.03)' : 'scale(1)',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(to top, var(--cv-surface) 0%, transparent 60%)',
+          }}
+        />
+        {/* Badges on image */}
+        <div style={{ position: 'absolute', top: '12px', left: '12px', display: 'flex', gap: '6px' }}>
           <span
             style={{
               fontFamily: 'var(--cv-font-mono)',
-              fontSize: '0.65rem',
+              fontSize: '0.62rem',
               letterSpacing: '0.15em',
               textTransform: 'uppercase',
-              color: color,
-              background: `${color}18`,
-              border: `1px solid ${color}33`,
-              padding: '3px 10px',
-              borderRadius: '4px',
+              color: '#fff',
+              background: color,
+              padding: '4px 10px',
+              borderRadius: '6px',
               fontWeight: 600,
             }}
           >
@@ -209,12 +286,11 @@ function ProjectCard({ project, index, isExpanded, onToggle }: {
               alignItems: 'center',
               gap: '4px',
               fontFamily: 'var(--cv-font-mono)',
-              fontSize: '0.65rem',
-              color: status.color,
-              background: `${status.color}18`,
-              border: `1px solid ${status.color}33`,
-              padding: '3px 10px',
-              borderRadius: '4px',
+              fontSize: '0.62rem',
+              color: '#fff',
+              background: status.color,
+              padding: '4px 10px',
+              borderRadius: '6px',
             }}
           >
             <span
@@ -222,14 +298,16 @@ function ProjectCard({ project, index, isExpanded, onToggle }: {
                 width: '5px',
                 height: '5px',
                 borderRadius: '50%',
-                background: status.color,
+                background: '#fff',
                 ...(project.status === 'production' ? { animation: 'pulse-dot 2s infinite' } : {}),
               }}
             />
             {status.label}
           </span>
         </div>
+      </div>
 
+      <div style={{ padding: '20px 24px 24px' }}>
         {/* Title */}
         <h2
           style={{
@@ -333,11 +411,11 @@ function ProjectCard({ project, index, isExpanded, onToggle }: {
             </div>
 
             {/* Links */}
-            {(project.links.live || project.links.github) && (
+            {(project.liveUrl || project.githubUrl) && (
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                {project.links.live && (
+                {project.liveUrl && (
                   <a
-                    href={project.links.live}
+                    href={project.liveUrl}
                     target="_blank"
                     rel="noreferrer"
                     onClick={e => e.stopPropagation()}
@@ -361,9 +439,9 @@ function ProjectCard({ project, index, isExpanded, onToggle }: {
                     <ExternalLink size={13} /> Ver en vivo
                   </a>
                 )}
-                {project.links.github && (
+                {project.githubUrl && (
                   <a
-                    href={project.links.github}
+                    href={project.githubUrl}
                     target="_blank"
                     rel="noreferrer"
                     onClick={e => e.stopPropagation()}

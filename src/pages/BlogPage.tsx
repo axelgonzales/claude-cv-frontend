@@ -1,155 +1,60 @@
-import { useState } from 'react';
-import { Clock, Tag, ChevronRight, Terminal } from 'lucide-react';
-import { blogPosts, categoryColors, type BlogPost } from '../data/blogPosts';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Clock, Tag, ArrowRight, Terminal } from 'lucide-react';
+import { blogApi, type BlogPost } from '../lib/api';
+import { blogPosts as fallbackPosts, categoryColors } from '../data/blogPosts';
 
 const categories = ['Todos', 'MCP', 'Skills', 'Agents', 'Commands', 'Architecture', 'Deploy', 'Hooks', 'Config', 'Tokens'] as const;
 
-function ContentBlock({ text }: { text: string }) {
-  // Code block
-  if (text.startsWith('```')) {
-    const lines = text.split('\n');
-    const lang = lines[0].replace('```', '').trim();
-    const code = lines.slice(1, lines[lines.length - 1] === '```' ? -1 : undefined).join('\n');
-    return (
-      <div style={{ position: 'relative', marginTop: '4px', marginBottom: '4px' }}>
-        {lang && (
-          <span
-            style={{
-              position: 'absolute',
-              top: '8px',
-              right: '12px',
-              fontFamily: 'var(--cv-font-mono)',
-              fontSize: '0.58rem',
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              color: 'var(--cv-text-muted)',
-              opacity: 0.6,
-            }}
-          >
-            {lang}
-          </span>
-        )}
-        <pre
-          style={{
-            fontFamily: 'var(--cv-font-mono)',
-            fontSize: '0.78rem',
-            lineHeight: 1.7,
-            color: 'var(--cv-accent)',
-            background: 'rgba(0,0,0,0.3)',
-            border: '1px solid var(--cv-border)',
-            borderRadius: '10px',
-            padding: '16px 18px',
-            overflowX: 'auto',
-            whiteSpace: 'pre',
-            margin: 0,
-          }}
-        >
-          {code}
-        </pre>
-      </div>
-    );
-  }
-
-  // Subheading (## )
-  if (text.startsWith('## ')) {
-    return (
-      <h3
-        style={{
-          fontFamily: 'var(--cv-font-heading)',
-          fontSize: '1.05rem',
-          fontWeight: 600,
-          color: 'var(--cv-text-primary)',
-          marginTop: '16px',
-          marginBottom: '-4px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-        }}
-      >
-        <span style={{ color: 'var(--cv-accent)', fontSize: '0.7rem', fontFamily: 'var(--cv-font-mono)' }}>#</span>
-        {text.slice(3)}
-      </h3>
-    );
-  }
-
-  // Bold text (**text**)
-  const parts = text.split(/(\*\*.*?\*\*)/g);
-  const hasFormatting = parts.length > 1;
-
-  // List items starting with -
-  if (text.startsWith('- ')) {
-    return (
-      <div style={{ display: 'flex', gap: '10px', paddingLeft: '4px' }}>
-        <span style={{ color: 'var(--cv-accent)', fontFamily: 'var(--cv-font-mono)', fontSize: '0.8rem', flexShrink: 0 }}>-</span>
-        <p
-          style={{
-            fontFamily: 'var(--cv-font-body)',
-            fontSize: '0.86rem',
-            color: 'var(--cv-text-secondary)',
-            lineHeight: 1.8,
-            margin: 0,
-          }}
-        >
-          {renderInline(text.slice(2))}
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <p
-      style={{
-        fontFamily: 'var(--cv-font-body)',
-        fontSize: '0.88rem',
-        color: 'var(--cv-text-secondary)',
-        lineHeight: 1.8,
-      }}
-    >
-      {hasFormatting ? renderInline(text) : text}
-    </p>
-  );
-}
-
-function renderInline(text: string) {
-  // Handle **bold** and `code` inline
-  const parts = text.split(/(\*\*.*?\*\*|`[^`]+`)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith('**') && part.endsWith('**')) {
-      return (
-        <strong key={i} style={{ color: 'var(--cv-text-primary)', fontWeight: 600 }}>
-          {part.slice(2, -2)}
-        </strong>
-      );
-    }
-    if (part.startsWith('`') && part.endsWith('`')) {
-      return (
-        <code
-          key={i}
-          style={{
-            fontFamily: 'var(--cv-font-mono)',
-            fontSize: '0.82em',
-            color: 'var(--cv-accent)',
-            background: 'rgba(6,182,212,0.1)',
-            border: '1px solid rgba(6,182,212,0.2)',
-            padding: '1px 6px',
-            borderRadius: '4px',
-          }}
-        >
-          {part.slice(1, -1)}
-        </code>
-      );
-    }
-    return part;
-  });
+interface DisplayPost {
+  slug: string;
+  title: string;
+  excerpt: string;
+  category: string;
+  date: string;
+  readTime: string;
+  tags: string[];
+  imageUrl: string;
 }
 
 export default function BlogPage() {
   const [activeCategory, setActiveCategory] = useState<string>('Todos');
-  const [expandedPost, setExpandedPost] = useState<string | null>(null);
+  const [posts, setPosts] = useState<DisplayPost[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    blogApi.getAll()
+      .then((data: BlogPost[]) => {
+        setPosts(data.map(p => ({
+          slug: p.slug,
+          title: p.title,
+          excerpt: p.excerpt,
+          category: p.category,
+          date: p.date,
+          readTime: p.readTime,
+          tags: p.tags ? p.tags.split(',').map(t => t.trim()) : [],
+          imageUrl: p.imageUrl || `/images/blog/${p.slug}.png`,
+        })));
+      })
+      .catch(() => {
+        // Fallback to hardcoded data
+        setPosts(fallbackPosts.map(p => ({
+          slug: p.id,
+          title: p.title,
+          excerpt: p.excerpt,
+          category: p.category,
+          date: p.date,
+          readTime: p.readTime,
+          tags: p.tags,
+          imageUrl: `/images/blog/${p.id}.png`,
+        })));
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = activeCategory === 'Todos'
-    ? blogPosts
-    : blogPosts.filter(p => p.category === activeCategory);
+    ? posts
+    : posts.filter(p => p.category === activeCategory);
 
   return (
     <div style={{ background: 'var(--cv-bg)', minHeight: '100vh', paddingTop: '56px' }}>
@@ -242,7 +147,7 @@ export default function BlogPage() {
         >
           {categories.map(cat => {
             const isActive = activeCategory === cat;
-            const color = cat === 'Todos' ? 'var(--cv-accent)' : categoryColors[cat as BlogPost['category']];
+            const color = cat === 'Todos' ? 'var(--cv-accent)' : categoryColors[cat as keyof typeof categoryColors];
             return (
               <button
                 key={cat}
@@ -266,42 +171,42 @@ export default function BlogPage() {
           })}
         </div>
 
-        {/* Posts grid */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {filtered.map((post, idx) => (
-            <BlogCard
-              key={post.id}
-              post={post}
-              index={idx}
-              isExpanded={expandedPost === post.id}
-              onToggle={() => setExpandedPost(expandedPost === post.id ? null : post.id)}
-            />
-          ))}
-        </div>
-
-        {filtered.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '60px 0' }}>
-            <p style={{ fontFamily: 'var(--cv-font-mono)', fontSize: '0.8rem', color: 'var(--cv-text-muted)' }}>
-              No hay posts en esta categoria aun.
-            </p>
+        {loading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {[1, 2, 3].map(i => (
+              <div key={i} className="cv-shimmer" style={{ height: '200px', borderRadius: '16px' }} />
+            ))}
           </div>
+        ) : (
+          <>
+            {/* Posts grid */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {filtered.map((post, idx) => (
+                <BlogCard key={post.slug} post={post} index={idx} />
+              ))}
+            </div>
+
+            {filtered.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                <p style={{ fontFamily: 'var(--cv-font-mono)', fontSize: '0.8rem', color: 'var(--cv-text-muted)' }}>
+                  No hay posts en esta categoria aun.
+                </p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
   );
 }
 
-function BlogCard({ post, index, isExpanded, onToggle }: {
-  post: BlogPost;
-  index: number;
-  isExpanded: boolean;
-  onToggle: () => void;
-}) {
-  const color = categoryColors[post.category];
+function BlogCard({ post, index }: { post: DisplayPost; index: number }) {
+  const color = categoryColors[post.category as keyof typeof categoryColors] || 'var(--cv-accent)';
   const [hovered, setHovered] = useState(false);
 
   return (
-    <article
+    <Link
+      to={`/blog/${post.slug}`}
       className="cv-animate"
       style={{
         animationDelay: `${0.1 + index * 0.08}s`,
@@ -310,34 +215,56 @@ function BlogCard({ post, index, isExpanded, onToggle }: {
         background: hovered ? 'var(--cv-surface-2)' : 'var(--cv-surface)',
         overflow: 'hidden',
         transition: 'all 0.2s ease',
-        cursor: 'pointer',
+        textDecoration: 'none',
+        display: 'block',
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onClick={onToggle}
     >
-      {/* Top accent */}
-      <div style={{ height: '2px', background: `linear-gradient(90deg, ${color}, transparent)` }} />
+      {/* Cover image */}
+      <div style={{ position: 'relative', height: '180px', overflow: 'hidden' }}>
+        <img
+          src={post.imageUrl}
+          alt={post.title}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            transition: 'transform 0.3s ease',
+            transform: hovered ? 'scale(1.03)' : 'scale(1)',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(to top, var(--cv-surface) 0%, transparent 60%)',
+          }}
+        />
+        {/* Category badge on image */}
+        <span
+          style={{
+            position: 'absolute',
+            top: '12px',
+            left: '12px',
+            fontFamily: 'var(--cv-font-mono)',
+            fontSize: '0.62rem',
+            letterSpacing: '0.15em',
+            textTransform: 'uppercase',
+            color: '#fff',
+            background: color,
+            padding: '4px 10px',
+            borderRadius: '6px',
+            fontWeight: 600,
+          }}
+        >
+          {post.category}
+        </span>
+      </div>
 
-      <div style={{ padding: '24px 28px' }}>
+      <div style={{ padding: '20px 24px 24px' }}>
         {/* Meta row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
-          <span
-            style={{
-              fontFamily: 'var(--cv-font-mono)',
-              fontSize: '0.65rem',
-              letterSpacing: '0.15em',
-              textTransform: 'uppercase',
-              color: color,
-              background: `${color}18`,
-              border: `1px solid ${color}33`,
-              padding: '3px 10px',
-              borderRadius: '4px',
-              fontWeight: 600,
-            }}
-          >
-            {post.category}
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
           <span style={{ fontFamily: 'var(--cv-font-mono)', fontSize: '0.68rem', color: 'var(--cv-text-muted)' }}>
             {new Date(post.date).toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' })}
           </span>
@@ -374,8 +301,8 @@ function BlogCard({ post, index, isExpanded, onToggle }: {
         </p>
 
         {/* Tags */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: isExpanded ? '20px' : '0' }}>
-          {post.tags.map(tag => (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
+          {post.tags.slice(0, 4).map(tag => (
             <span
               key={tag}
               style={{
@@ -396,34 +323,8 @@ function BlogCard({ post, index, isExpanded, onToggle }: {
           ))}
         </div>
 
-        {/* Expanded content */}
-        {isExpanded && (
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              borderTop: '1px solid var(--cv-border)',
-              paddingTop: '24px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px',
-              cursor: 'default',
-            }}
-          >
-            {post.content.map((block, i) => (
-              <ContentBlock key={i} text={block} />
-            ))}
-          </div>
-        )}
-
-        {/* Expand indicator */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            marginTop: '12px',
-          }}
-        >
+        {/* Read more */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
           <span
             style={{
               display: 'inline-flex',
@@ -432,20 +333,12 @@ function BlogCard({ post, index, isExpanded, onToggle }: {
               fontFamily: 'var(--cv-font-mono)',
               fontSize: '0.65rem',
               color: 'var(--cv-accent)',
-              transition: 'transform 0.2s',
             }}
           >
-            {isExpanded ? 'Cerrar' : 'Leer mas'}
-            <ChevronRight
-              size={12}
-              style={{
-                transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-                transition: 'transform 0.2s',
-              }}
-            />
+            Leer articulo <ArrowRight size={12} />
           </span>
         </div>
       </div>
-    </article>
+    </Link>
   );
 }
