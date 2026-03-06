@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- Rounded square background -->
+  <rect width="128" height="128" rx="24" ry="24" fill="#06b6d4"/>
+
+  <!-- Letter A -->
+  <path d="M28 95 L52 33 L58 33 L82 95 L74 95 L68 78 L42 78 L36 95 Z M45 71 L65 71 L55 43 Z" fill="#ffffff"/>
+
+  <!-- Letter G -->
+  <path d="M72 58 C72 42 82 30 98 30 C106 30 112 33 116 38 L110 45 C107 41 103 38 98 38 C87 38 81 47 81 58 C81 69 87 78 98 78 C103 78 107 76 107 76 L107 62 L98 62 L98 55 L115 55 L115 82 C115 82 108 88 98 88 C82 88 72 76 72 58 Z" fill="#ffffff"/>
+</svg>

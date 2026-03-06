@@ -22,6 +22,16 @@ export default function HeroSection({ profile, experiences, educations, skills }
       flexDirection: 'column',
       justifyContent: 'center',
     }}>
+      {/* Background image */}
+      <img
+        src="/images/hero-bg.png"
+        alt=""
+        style={{
+          position: 'absolute', inset: 0, width: '100%', height: '100%',
+          objectFit: 'cover', opacity: 0.15, pointerEvents: 'none',
+        }}
+      />
+
       {/* Grid background */}
       <div style={{
         position: 'absolute', inset: 0, pointerEvents: 'none',
@@ -71,14 +81,21 @@ export default function HeroSection({ profile, experiences, educations, skills }
         <div className="cv-animate cv-animate-delay-2" style={{ marginBottom: '20px' }}>
           {/* Avatar */}
           <div style={{
-            width: '64px', height: '64px', borderRadius: '14px',
-            background: 'var(--cv-surface-2)', border: '1px solid var(--cv-accent-border)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '1.2rem', fontWeight: 700, fontFamily: 'var(--cv-font-heading)',
-            color: 'var(--cv-accent)', marginBottom: '20px',
+            width: '72px', height: '72px', borderRadius: '16px',
+            overflow: 'hidden',
+            border: '1px solid var(--cv-accent-border)',
+            marginBottom: '20px',
             boxShadow: '0 0 24px var(--cv-accent-glow)',
           }}>
-            {initials}
+            <img
+              src="/images/avatar.png"
+              alt={profile.name}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              onError={(e) => {
+                const el = e.currentTarget.parentElement!;
+                el.innerHTML = `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:1.2rem;font-weight:700;font-family:var(--cv-font-heading);color:var(--cv-accent);background:var(--cv-surface-2)">${initials}</span>`;
+              }}
+            />
           </div>
 
           {/* Name */}

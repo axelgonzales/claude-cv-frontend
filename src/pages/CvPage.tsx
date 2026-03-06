@@ -5,6 +5,8 @@ import HeroSection from '../components/cv/HeroSection';
 import ExperienceSection from '../components/cv/ExperienceSection';
 import EducationSection from '../components/cv/EducationSection';
 import SkillsSection from '../components/cv/SkillsSection';
+import BlogPreviewSection from '../components/cv/BlogPreviewSection';
+import Loader from '../components/cv/Loader';
 import { Link } from 'react-router-dom';
 import { Settings } from 'lucide-react';
 
@@ -69,6 +71,7 @@ export default function CvPage() {
   if (loading) {
     return (
       <div style={{ background: 'var(--cv-bg)', minHeight: '100vh' }}>
+        <Loader />
         <SkeletonHero />
         <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 24px' }}>
           <SkeletonSection />
@@ -103,10 +106,11 @@ export default function CvPage() {
   }
 
   return (
-    <div style={{ background: 'var(--cv-bg)', minHeight: '100vh' }}>
+    <div style={{ background: 'var(--cv-bg)', minHeight: '100vh', paddingTop: '56px' }}>
       <HeroSection profile={profile} experiences={experiences} educations={educations} skills={skills} />
 
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 24px' }}>
+        <BlogPreviewSection />
         <ExperienceSection experiences={experiences} />
         <SkillsSection skillGroups={skills} />
         <EducationSection educations={educations} />

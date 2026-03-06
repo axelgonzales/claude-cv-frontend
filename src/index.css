@@ -116,6 +116,13 @@
   opacity: 0.4;
 }
 
+/* ─── Navbar responsive ─── */
+@media (max-width: 640px) {
+  .nav-desktop { display: none !important; }
+  .nav-mobile-toggle { display: flex !important; }
+  .nav-mobile-menu { display: flex !important; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cv-animate { animation: none; opacity: 1; }
   * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
