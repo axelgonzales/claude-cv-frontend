@@ -65,7 +65,7 @@ export default function LearnPage() {
   }, [authed]);
 
   const totalLessons = modules.reduce((sum, m) => sum + m.lessons.length, 0);
-  const totalCompleted = completedLessons.length;
+  const totalCompleted = modules.reduce((sum, m) => sum + m.lessons.filter(l => isLessonComplete(m.slug, l.slug)).length, 0);
   const overallPercent = totalLessons > 0 ? Math.round((totalCompleted / totalLessons) * 100) : 0;
 
   const getModuleProgress = (mod: DisplayModule) => {
