@@ -36,8 +36,9 @@ export default function LessonPage() {
   }, [moduleSlug, lessonSlug]);
 
   useEffect(() => {
-    if (!moduleSlug) return;
+    if (!moduleSlug || authed !== true) return;
 
+    setLoading(true);
     learnApi.getLessons(moduleSlug)
       .then((data: LearnLesson[]) => {
         setLessons(data.map(l => ({
@@ -64,7 +65,7 @@ export default function LessonPage() {
         }
       })
       .finally(() => setLoading(false));
-  }, [moduleSlug]);
+  }, [moduleSlug, authed]);
 
   const currentLesson = lessonSlug
     ? lessons.find(l => l.slug === lessonSlug)
