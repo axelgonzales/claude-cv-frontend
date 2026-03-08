@@ -5,7 +5,7 @@ import { auth } from '../lib/firebase';
 import { Terminal, FileText, Plug, Slash, BookOpen, Bot, Zap, Brain, Cpu, ChevronRight, GraduationCap, CheckCircle, Lock, Circle, ChevronDown } from 'lucide-react';
 import { learnApi, type LearnModule } from '../lib/api';
 import { learnModules as localModules } from '../data/learnContent';
-import { getCompletedLessons, isLessonComplete } from '../lib/learnProgress';
+import { isLessonComplete } from '../lib/learnProgress';
 
 const iconMap: Record<string, React.ReactNode> = {
   Terminal: <Terminal size={16} />,
@@ -25,7 +25,7 @@ export default function LearnPage() {
   const [modules, setModules] = useState<DisplayModule[]>([]);
   const [loading, setLoading] = useState(true);
   const [authed, setAuthed] = useState<boolean | null>(null);
-  const [completedLessons, setCompletedLessons] = useState<string[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0);
   const navigate = useNavigate();
 
   // Scroll to top on mount
@@ -41,10 +41,9 @@ export default function LearnPage() {
     return unsub;
   }, []);
 
-  // Refresh completed lessons on focus (user may return from a lesson)
+  // Re-render on focus so progress updates when user returns from a lesson
   useEffect(() => {
-    setCompletedLessons(getCompletedLessons());
-    const onFocus = () => setCompletedLessons(getCompletedLessons());
+    const onFocus = () => setRefreshKey(k => k + 1);
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   }, []);
@@ -189,7 +188,7 @@ export default function LearnPage() {
             ))}
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div key={refreshKey} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {modules.map((mod, idx) => (
               <ModuleCard key={mod.slug} module={mod} index={idx} progress={getModuleProgress(mod)} />
             ))}
