@@ -340,7 +340,7 @@ function ModuleCard({ module, index, progress }: { module: DisplayModule; index:
   );
 }
 
-function LessonRow({ lesson, moduleSlug, index, completed, isLast }: {
+function LessonRow({ lesson, moduleSlug, index: _index, completed, isLast }: {
   lesson: { slug: string; title: string; excerpt: string; readTime: string };
   moduleSlug: string; index: number; completed: boolean; isLast: boolean;
 }) {
