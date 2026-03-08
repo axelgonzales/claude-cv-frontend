@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { Terminal, FileText, Plug, Slash, BookOpen, Bot, Zap, Brain, Cpu, ChevronRight, GraduationCap, CheckCircle, Lock, Circle, ChevronDown } from 'lucide-react';
-import { learnApi, type LearnModule, type LearnLesson } from '../lib/api';
+import { learnApi, type LearnModule } from '../lib/api';
 import { learnModules as localModules } from '../data/learnContent';
 import { getCompletedLessons, isLessonComplete } from '../lib/learnProgress';
 
@@ -19,14 +19,7 @@ const iconMap: Record<string, React.ReactNode> = {
   Cpu: <Cpu size={16} />,
 };
 
-interface DisplayModule {
-  slug: string;
-  title: string;
-  description: string;
-  icon: string;
-  displayOrder: number;
-  lessons: { slug: string; title: string; excerpt: string; readTime: string }[];
-}
+type DisplayModule = LearnModule;
 
 export default function LearnPage() {
   const [modules, setModules] = useState<DisplayModule[]>([]);
@@ -59,36 +52,12 @@ export default function LearnPage() {
   useEffect(() => {
     if (authed === false) return;
 
-    // Try API first, then use local data with lessons included
+    // Single API call — backend now returns modules with lesson summaries included
     learnApi.getModules()
-      .then(async (apiModules: LearnModule[]) => {
-        // Fetch lessons for each module in parallel
-        const withLessons = await Promise.all(
-          apiModules.map(async m => {
-            try {
-              const lessons = await learnApi.getLessons(m.slug);
-              return {
-                slug: m.slug, title: m.title, description: m.description,
-                icon: m.icon, displayOrder: m.displayOrder,
-                lessons: lessons.map((l: LearnLesson) => ({ slug: l.slug, title: l.title, excerpt: l.excerpt, readTime: l.readTime })),
-              };
-            } catch {
-              // Fallback to local for this module
-              const local = localModules.find(lm => lm.slug === m.slug);
-              return {
-                slug: m.slug, title: m.title, description: m.description,
-                icon: m.icon, displayOrder: m.displayOrder,
-                lessons: local ? local.lessons.map(l => ({ slug: l.slug, title: l.title, excerpt: l.excerpt, readTime: l.readTime })) : [],
-              };
-            }
-          })
-        );
-        setModules(withLessons);
-      })
+      .then(setModules)
       .catch(() => {
         setModules(localModules.map(m => ({
-          slug: m.slug, title: m.title, description: m.description,
-          icon: m.icon, displayOrder: m.displayOrder,
+          ...m,
           lessons: m.lessons.map(l => ({ slug: l.slug, title: l.title, excerpt: l.excerpt, readTime: l.readTime })),
         })));
       })
@@ -341,7 +310,7 @@ function ModuleCard({ module, index, progress }: { module: DisplayModule; index:
 }
 
 function LessonRow({ lesson, moduleSlug, index: _index, completed, isLast }: {
-  lesson: { slug: string; title: string; excerpt: string; readTime: string };
+  lesson: import('../lib/api').LearnLessonSummary;
   moduleSlug: string; index: number; completed: boolean; isLast: boolean;
 }) {
   const [hovered, setHovered] = useState(false);

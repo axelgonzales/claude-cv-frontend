@@ -7,6 +7,7 @@ import BlogDetailPage from './pages/BlogDetailPage';
 import ProjectsPage from './pages/ProjectsPage';
 import LearnPage from './pages/LearnPage';
 import LessonPage from './pages/LessonPage';
+import NotFoundPage from './pages/NotFoundPage';
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
         <Route path="/learn" element={<LearnPage />} />
         <Route path="/learn/:moduleSlug" element={<LessonPage />} />
         <Route path="/learn/:moduleSlug/:lessonSlug" element={<LessonPage />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   );

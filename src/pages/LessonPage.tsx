@@ -13,6 +13,7 @@ export default function LessonPage() {
   const { moduleSlug, lessonSlug } = useParams<{ moduleSlug: string; lessonSlug?: string }>();
   const [lessons, setLessons] = useState<{ slug: string; title: string; excerpt: string; readTime: string; content: string[] }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lessonContent, setLessonContent] = useState<string[]>([]);
   const [moduleTitle, setModuleTitle] = useState('');
   const [authed, setAuthed] = useState<boolean | null>(null);
   const navigate = useNavigate();
@@ -46,7 +47,7 @@ export default function LessonPage() {
           title: l.title,
           excerpt: l.excerpt,
           readTime: l.readTime,
-          content: l.content ? l.content.split('\n---BLOCK---\n') : [],
+          content: [],
         })));
         return learnApi.getModule(moduleSlug);
       })
@@ -67,6 +68,22 @@ export default function LessonPage() {
       .finally(() => setLoading(false));
   }, [moduleSlug, authed]);
 
+  // Fetch full lesson content when lessonSlug changes
+  useEffect(() => {
+    if (!moduleSlug || !lessonSlug || authed !== true) return;
+
+    learnApi.getLesson(moduleSlug, lessonSlug)
+      .then(lesson => {
+        setLessonContent(Array.isArray(lesson.content) ? lesson.content : []);
+      })
+      .catch(() => {
+        const local = localModules.find(m => m.slug === moduleSlug);
+        const localLesson = local?.lessons.find(l => l.slug === lessonSlug);
+        if (localLesson) setLessonContent(localLesson.content);
+        else setLessonContent([]);
+      });
+  }, [moduleSlug, lessonSlug, authed]);
+
   const currentLesson = lessonSlug
     ? lessons.find(l => l.slug === lessonSlug)
     : lessons[0];
@@ -76,8 +93,7 @@ export default function LessonPage() {
   const prevLesson = currentIndex > 0 ? lessons[currentIndex - 1] : null;
 
   const tocItems = useMemo<TocItem[]>(() => {
-    if (!currentLesson) return [];
-    return currentLesson.content
+    return lessonContent
       .filter(b => b.startsWith('## ') || b.startsWith('### '))
       .map(b => {
         const level = b.startsWith('### ') ? 3 : 2;
@@ -85,7 +101,7 @@ export default function LessonPage() {
         const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
         return { id, text, level };
       });
-  }, [currentLesson]);
+  }, [lessonContent]);
 
   const [activeId, setActiveId] = useState('');
   useEffect(() => {
@@ -253,7 +269,7 @@ export default function LessonPage() {
 
           {/* Content blocks */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {currentLesson.content.map((block, i) => (
+            {lessonContent.map((block, i) => (
               <ContentBlock key={i} text={block} />
             ))}
           </div>

@@ -121,6 +121,13 @@ export const blogApi = {
   delete: (id: number) => api.delete(`/blog/${id}`),
 };
 
+export interface LearnLessonSummary {
+  slug: string;
+  title: string;
+  excerpt: string;
+  readTime: string;
+}
+
 export interface LearnModule {
   id?: number;
   slug: string;
@@ -128,7 +135,7 @@ export interface LearnModule {
   description: string;
   icon: string;
   displayOrder: number;
-  lessonCount: number;
+  lessons: LearnLessonSummary[];
 }
 
 export interface LearnLesson {
@@ -136,7 +143,7 @@ export interface LearnLesson {
   slug: string;
   title: string;
   excerpt: string;
-  content: string;
+  content: string[];
   moduleSlug: string;
   displayOrder: number;
   readTime: string;
