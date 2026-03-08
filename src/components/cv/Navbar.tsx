@@ -1,16 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { User, Terminal, FolderKanban, Menu, X } from 'lucide-react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../../lib/firebase';
+import { User, Terminal, FolderKanban, GraduationCap, Menu, X } from 'lucide-react';
 
-const navItems = [
-  { path: '/', label: 'CV', icon: User },
-  { path: '/blog', label: 'Blog', icon: Terminal },
-  { path: '/projects', label: 'Proyectos', icon: FolderKanban },
+const allNavItems = [
+  { path: '/', label: 'CV', icon: User, authRequired: false },
+  { path: '/learn', label: 'Aprende', icon: GraduationCap, authRequired: true },
+  { path: '/blog', label: 'Blog', icon: Terminal, authRequired: false },
+  { path: '/projects', label: 'Proyectos', icon: FolderKanban, authRequired: false },
 ] as const;
 
 export default function Navbar() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isAuthed, setIsAuthed] = useState(false);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, user => setIsAuthed(!!user));
+    return unsub;
+  }, []);
+
+  const navItems = allNavItems.filter(item => !item.authRequired || isAuthed);
 
   return (
     <nav

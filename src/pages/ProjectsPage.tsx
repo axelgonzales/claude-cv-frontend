@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ExternalLink, Github, ChevronRight, FolderKanban, CheckCircle } from 'lucide-react';
 import { projectApi, type Project as ApiProject } from '../lib/api';
-import { projects as fallbackProjects, categoryColors, statusLabels } from '../data/projects';
+import { categoryColors, statusLabels } from '../data/projects';
 
 const categories = ['Todos', 'Full-Stack', 'Backend', 'Frontend', 'DevOps', 'AI'] as const;
 
@@ -43,19 +43,7 @@ export default function ProjectsPage() {
         })));
       })
       .catch(() => {
-        setProjects(fallbackProjects.map(p => ({
-          slug: p.id,
-          title: p.title,
-          description: p.description,
-          longDescription: p.longDescription,
-          technologies: p.technologies,
-          category: p.category,
-          status: p.status,
-          liveUrl: p.links.live,
-          githubUrl: p.links.github,
-          highlights: p.highlights,
-          imageUrl: `/images/projects/${p.id}.png`,
-        })));
+        // API unavailable
       })
       .finally(() => setLoading(false));
   }, []);

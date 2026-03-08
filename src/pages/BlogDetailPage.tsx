@@ -1,8 +1,91 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Clock, Tag, Terminal } from 'lucide-react';
+import { ArrowLeft, Clock, Tag, Terminal, List } from 'lucide-react';
 import { blogApi, type BlogPost } from '../lib/api';
-import { blogPosts as fallbackPosts, categoryColors } from '../data/blogPosts';
+import { blogPosts as localPosts, categoryColors } from '../data/blogPosts';
+
+interface TocItem {
+  id: string;
+  text: string;
+  level: 2 | 3;
+}
+
+function TableOfContents({ items, activeId }: { items: TocItem[]; activeId: string }) {
+  const [collapsed, setCollapsed] = useState(false);
+
+  if (items.length === 0) return null;
+
+  return (
+    <nav
+      style={{
+        position: 'sticky',
+        top: '72px',
+        maxHeight: 'calc(100vh - 88px)',
+        overflowY: 'auto',
+        paddingRight: '16px',
+        scrollbarWidth: 'thin',
+        scrollbarColor: 'var(--cv-border) transparent',
+      }}
+    >
+      <button
+        onClick={() => setCollapsed(c => !c)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          fontFamily: 'var(--cv-font-mono)',
+          fontSize: '0.62rem',
+          letterSpacing: '0.15em',
+          textTransform: 'uppercase',
+          color: 'var(--cv-text-muted)',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          marginBottom: '12px',
+          padding: 0,
+        }}
+      >
+        <List size={12} />
+        Contenido
+        <span style={{ fontSize: '0.55rem', opacity: 0.6 }}>{collapsed ? '+' : '-'}</span>
+      </button>
+
+      {!collapsed && (
+        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          {items.map(item => {
+            const isActive = activeId === item.id;
+            return (
+              <li key={item.id}>
+                <a
+                  href={`#${item.id}`}
+                  onClick={e => {
+                    e.preventDefault();
+                    document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                  style={{
+                    display: 'block',
+                    fontFamily: 'var(--cv-font-body)',
+                    fontSize: item.level === 2 ? '0.73rem' : '0.67rem',
+                    lineHeight: 1.4,
+                    color: isActive ? 'var(--cv-accent)' : 'var(--cv-text-muted)',
+                    textDecoration: 'none',
+                    padding: '4px 0 4px ' + (item.level === 3 ? '14px' : '0'),
+                    borderLeft: isActive ? '2px solid var(--cv-accent)' : '2px solid transparent',
+                    paddingLeft: item.level === 3 ? '14px' : '8px',
+                    transition: 'all 0.15s ease',
+                    opacity: isActive ? 1 : 0.75,
+                  }}
+                >
+                  {item.text}
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </nav>
+  );
+}
 
 function ContentBlock({ text }: { text: string }) {
   if (text.startsWith('```')) {
@@ -49,9 +132,35 @@ function ContentBlock({ text }: { text: string }) {
     );
   }
 
+  if (text.startsWith('### ')) {
+    const id = text.slice(4).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    return (
+      <h4
+        id={id}
+        style={{
+          fontFamily: 'var(--cv-font-heading)',
+          fontSize: '0.92rem',
+          fontWeight: 600,
+          color: 'var(--cv-text-primary)',
+          marginTop: '14px',
+          marginBottom: '-4px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          paddingLeft: '12px',
+          borderLeft: '2px solid var(--cv-accent)',
+        }}
+      >
+        {text.slice(4)}
+      </h4>
+    );
+  }
+
   if (text.startsWith('## ')) {
+    const id = text.slice(3).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     return (
       <h3
+        id={id}
         style={{
           fontFamily: 'var(--cv-font-heading)',
           fontSize: '1.05rem',
@@ -123,6 +232,7 @@ export default function BlogDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const [post, setPost] = useState<{ title: string; excerpt: string; category: string; date: string; readTime: string; content: string[]; tags: string[]; imageUrl: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeHeadingId, setActiveHeadingId] = useState('');
 
   useEffect(() => {
     if (!slug) return;
@@ -147,23 +257,53 @@ export default function BlogDetailPage() {
         });
       })
       .catch(() => {
-        // Fallback to hardcoded data
-        const fallback = fallbackPosts.find(p => p.id === slug);
-        if (fallback) {
+        // Fallback to local data
+        const local = localPosts.find(p => p.id === slug);
+        if (local) {
           setPost({
-            title: fallback.title,
-            excerpt: fallback.excerpt,
-            category: fallback.category,
-            date: fallback.date,
-            readTime: fallback.readTime,
-            content: fallback.content,
-            tags: fallback.tags,
+            title: local.title,
+            excerpt: local.excerpt,
+            category: local.category,
+            date: local.date,
+            readTime: local.readTime,
+            content: local.content,
+            tags: local.tags,
             imageUrl: `/images/blog/${slug}.png`,
           });
         }
       })
       .finally(() => setLoading(false));
   }, [slug]);
+
+  const tocItems = useMemo(() => {
+    if (!post) return [];
+    return post.content
+      .filter(block => block.startsWith('## ') || block.startsWith('### '))
+      .map(block => {
+        const level = block.startsWith('### ') ? 3 : 2;
+        const text = block.slice(level + 1);
+        const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        return { id, text, level } as TocItem;
+      });
+  }, [post]);
+
+  useEffect(() => {
+    if (tocItems.length === 0) return;
+    const observer = new IntersectionObserver(
+      entries => {
+        const visible = entries.filter(e => e.isIntersecting);
+        if (visible.length > 0) {
+          setActiveHeadingId(visible[0].target.id);
+        }
+      },
+      { rootMargin: '-80px 0px -60% 0px', threshold: 0 }
+    );
+    tocItems.forEach(item => {
+      const el = document.getElementById(item.id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, [tocItems]);
 
   if (loading) {
     return (
@@ -188,6 +328,33 @@ export default function BlogDetailPage() {
 
   return (
     <div style={{ background: 'var(--cv-bg)', minHeight: '100vh', paddingTop: '56px' }}>
+      {/* Sticky back button - always visible */}
+      <Link
+        to="/blog"
+        className="blog-back-btn"
+        style={{
+          position: 'fixed',
+          top: '68px',
+          left: '24px',
+          zIndex: 50,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '6px',
+          fontFamily: 'var(--cv-font-mono)',
+          fontSize: '0.68rem',
+          color: 'var(--cv-accent)',
+          textDecoration: 'none',
+          padding: '6px 14px',
+          borderRadius: '999px',
+          background: 'rgba(0,0,0,0.7)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid var(--cv-accent-border)',
+          transition: 'all 0.2s ease',
+        }}
+      >
+        <ArrowLeft size={13} /> Blog
+      </Link>
+
       {/* Hero with image */}
       <div style={{ position: 'relative', overflow: 'hidden' }}>
         <img
@@ -213,26 +380,6 @@ export default function BlogDetailPage() {
         />
 
         <div style={{ position: 'relative', maxWidth: '800px', margin: '0 auto', padding: '40px 24px 80px' }}>
-          {/* Back link */}
-          <Link
-            to="/blog"
-            className="cv-animate cv-animate-delay-1"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontFamily: 'var(--cv-font-mono)',
-              fontSize: '0.72rem',
-              color: 'var(--cv-text-muted)',
-              textDecoration: 'none',
-              marginBottom: '28px',
-              transition: 'color 0.2s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.color = 'var(--cv-accent)'; }}
-            onMouseLeave={e => { e.currentTarget.style.color = 'var(--cv-text-muted)'; }}
-          >
-            <ArrowLeft size={14} /> Volver al blog
-          </Link>
 
           {/* Meta */}
           <div className="cv-animate cv-animate-delay-2" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
@@ -293,10 +440,10 @@ export default function BlogDetailPage() {
         </div>
       </div>
 
-      {/* Content */}
-      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '0 24px 80px' }}>
+      {/* Content with TOC */}
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 24px 80px' }}>
         {/* Tags */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid var(--cv-border)' }}>
+        <div style={{ maxWidth: '800px', display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid var(--cv-border)' }}>
           {post.tags.map(tag => (
             <span
               key={tag}
@@ -318,38 +465,68 @@ export default function BlogDetailPage() {
           ))}
         </div>
 
-        {/* Article content */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {post.content.map((block, i) => (
-            <ContentBlock key={i} text={block} />
-          ))}
-        </div>
+        <div style={{ display: 'flex', gap: '40px' }}>
+          {/* TOC sidebar - hidden on mobile */}
+          {tocItems.length > 3 && (
+            <aside
+              className="blog-toc-sidebar"
+              style={{
+                width: '220px',
+                flexShrink: 0,
+                display: 'none',
+              }}
+            >
+              <TableOfContents items={tocItems} activeId={activeHeadingId} />
+            </aside>
+          )}
 
-        {/* Bottom nav */}
-        <div style={{ marginTop: '48px', paddingTop: '24px', borderTop: '1px solid var(--cv-border)' }}>
-          <Link
-            to="/blog"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontFamily: 'var(--cv-font-mono)',
-              fontSize: '0.75rem',
-              color: 'var(--cv-accent)',
-              textDecoration: 'none',
-              padding: '8px 16px',
-              borderRadius: '8px',
-              border: '1px solid var(--cv-accent-border)',
-              background: 'var(--cv-accent-dim)',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 0 16px var(--cv-accent-glow)'; }}
-            onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; }}
-          >
-            <ArrowLeft size={14} /> Todos los posts
-          </Link>
+          {/* Article content */}
+          <div style={{ flex: 1, minWidth: 0, maxWidth: '800px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {post.content.map((block, i) => (
+                <ContentBlock key={i} text={block} />
+              ))}
+            </div>
+
+            {/* Bottom nav */}
+            <div style={{ marginTop: '48px', paddingTop: '24px', borderTop: '1px solid var(--cv-border)' }}>
+              <Link
+                to="/blog"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontFamily: 'var(--cv-font-mono)',
+                  fontSize: '0.75rem',
+                  color: 'var(--cv-accent)',
+                  textDecoration: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: '1px solid var(--cv-accent-border)',
+                  background: 'var(--cv-accent-dim)',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 0 16px var(--cv-accent-glow)'; }}
+                onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; }}
+              >
+                <ArrowLeft size={14} /> Todos los posts
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* CSS for responsive TOC and sticky back button */}
+      <style>{`
+        @media (min-width: 1024px) {
+          .blog-toc-sidebar { display: block !important; }
+          .blog-back-btn { left: max(24px, calc((100vw - 1100px) / 2 - 100px)) !important; }
+        }
+        .blog-back-btn:hover {
+          box-shadow: 0 0 16px var(--cv-accent-glow);
+          border-color: var(--cv-accent) !important;
+        }
+      `}</style>
     </div>
   );
 }

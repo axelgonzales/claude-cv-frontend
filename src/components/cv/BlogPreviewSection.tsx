@@ -1,11 +1,36 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Clock, Terminal } from 'lucide-react';
 import { SectionHeader } from './ExperienceSection';
-import { blogPosts, categoryColors } from '../../data/blogPosts';
+import { blogApi, type BlogPost } from '../../lib/api';
+import { categoryColors } from '../../data/blogPosts';
+
+interface PreviewPost {
+  slug: string;
+  title: string;
+  excerpt: string;
+  category: string;
+  readTime: string;
+}
 
 export default function BlogPreviewSection() {
-  const latestPosts = blogPosts.slice(0, 3);
+  const [posts, setPosts] = useState<PreviewPost[]>([]);
+
+  useEffect(() => {
+    blogApi.getAll()
+      .then((data: BlogPost[]) => {
+        setPosts(data.slice(0, 3).map(p => ({
+          slug: p.slug,
+          title: p.title,
+          excerpt: p.excerpt,
+          category: p.category,
+          readTime: p.readTime,
+        })));
+      })
+      .catch(() => {});
+  }, []);
+
+  if (posts.length === 0) return null;
 
   return (
     <section className="cv-animate py-24" style={{ borderTop: '1px solid var(--cv-border)' }}>
@@ -26,8 +51,8 @@ export default function BlogPreviewSection() {
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {latestPosts.map(post => (
-          <PreviewCard key={post.id} post={post} />
+        {posts.map(post => (
+          <PreviewCard key={post.slug} post={post} />
         ))}
       </div>
 
@@ -66,13 +91,13 @@ export default function BlogPreviewSection() {
   );
 }
 
-function PreviewCard({ post }: { post: typeof blogPosts[0] }) {
+function PreviewCard({ post }: { post: PreviewPost }) {
   const [hovered, setHovered] = useState(false);
-  const color = categoryColors[post.category];
+  const color = categoryColors[post.category as keyof typeof categoryColors] || 'var(--cv-accent)';
 
   return (
     <Link
-      to={`/blog/${post.id}`}
+      to={`/blog/${post.slug}`}
       style={{
         textDecoration: 'none',
         display: 'block',

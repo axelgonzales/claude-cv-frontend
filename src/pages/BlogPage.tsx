@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, Tag, ArrowRight, Terminal } from 'lucide-react';
 import { blogApi, type BlogPost } from '../lib/api';
-import { blogPosts as fallbackPosts, categoryColors } from '../data/blogPosts';
+import { blogPosts as localBlogPosts, categoryColors } from '../data/blogPosts';
 
 const categories = ['Todos', 'MCP', 'Skills', 'Agents', 'Commands', 'Architecture', 'Deploy', 'Hooks', 'Config', 'Tokens'] as const;
 
@@ -37,8 +37,8 @@ export default function BlogPage() {
         })));
       })
       .catch(() => {
-        // Fallback to hardcoded data
-        setPosts(fallbackPosts.map(p => ({
+        // Fallback to local data
+        setPosts(localBlogPosts.map(p => ({
           slug: p.id,
           title: p.title,
           excerpt: p.excerpt,

@@ -121,6 +121,34 @@ export const blogApi = {
   delete: (id: number) => api.delete(`/blog/${id}`),
 };
 
+export interface LearnModule {
+  id?: number;
+  slug: string;
+  title: string;
+  description: string;
+  icon: string;
+  displayOrder: number;
+  lessonCount: number;
+}
+
+export interface LearnLesson {
+  id?: number;
+  slug: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  moduleSlug: string;
+  displayOrder: number;
+  readTime: string;
+}
+
+export const learnApi = {
+  getModules: () => api.get<LearnModule[]>('/learn/modules').then(r => r.data),
+  getModule: (slug: string) => api.get<LearnModule>(`/learn/modules/${slug}`).then(r => r.data),
+  getLessons: (moduleSlug: string) => api.get<LearnLesson[]>(`/learn/modules/${moduleSlug}/lessons`).then(r => r.data),
+  getLesson: (moduleSlug: string, lessonSlug: string) => api.get<LearnLesson>(`/learn/modules/${moduleSlug}/lessons/${lessonSlug}`).then(r => r.data),
+};
+
 export const projectApi = {
   getAll: () => api.get<Project[]>('/projects').then(r => r.data),
   getBySlug: (slug: string) => api.get<Project>(`/projects/${slug}`).then(r => r.data),
